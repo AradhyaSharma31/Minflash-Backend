@@ -4,10 +4,12 @@ import com.flashcard.FlashcardBackend.DTO.CardDTO;
 import com.flashcard.FlashcardBackend.Payload.CardUpdateResponse;
 import com.flashcard.FlashcardBackend.Service.CardService;
 import com.flashcard.FlashcardBackend.Service.DeckService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 import java.util.Map;
@@ -16,6 +18,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/flashcard/edit")
+@Slf4j
 public class CardController {
 
     @Autowired
@@ -39,6 +42,24 @@ public class CardController {
             return ResponseEntity.status(400).body(null);
         }
     }
+
+    @PostMapping("/createCardWithImage")
+    public ResponseEntity<CardDTO> createCardWithImage(
+            @RequestParam UUID deckId,
+            @RequestParam String term,
+            @RequestParam String definition,
+            @RequestParam String image,
+            @RequestParam(required = false) MultipartFile file
+            ) {
+        try {
+            CardDTO createdCard = cardService.createCardWithImage(deckId, term, definition, image, file);
+            log.info("Image: " + image);
+            return ResponseEntity.ok(createdCard);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
 
     @GetMapping("/getCard")
     public ResponseEntity<CardDTO> getCard(

@@ -4,6 +4,7 @@ import com.azure.core.http.rest.PagedIterable;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.models.BlobHttpHeaders;
 import com.azure.storage.blob.models.BlobItem;
 import com.flashcard.FlashcardBackend.DTO.CardDTO;
 import com.flashcard.FlashcardBackend.Entity.Card;
@@ -84,6 +85,63 @@ public class AzureBlobServiceImpl implements AzureBlobService {
         BlobClient blob = blobContainerClient.getBlobClient(path);
         blob.upload(storage.getInputStream(), true);
         return path;
+    }
+
+    @Override
+    public String getImageUrl(Storage storage) {
+        String path = getPath(storage);
+        BlobClient blobClient = blobContainerClient.getBlobClient(path);
+        BlobHttpHeaders headers = new BlobHttpHeaders();
+        String fileName = storage.getFileName();
+        int dotIndex = fileName.lastIndexOf(".");
+        String fileExtension = "";
+
+        if (dotIndex > 0) {
+            fileExtension = fileName.substring(dotIndex + 1).toLowerCase();
+            System.out.println("File extension: " + fileExtension);
+        } else {
+            System.out.println("No extension found.");
+        }
+
+        // Set Content-Type based on file extension
+        switch (fileExtension) {
+            case "png":
+                headers.setContentType("image/png");
+                break;
+            case "jpeg":
+            case "jpg":
+                headers.setContentType("image/jpeg");
+                break;
+            case "gif":
+                headers.setContentType("image/gif");
+                break;
+            case "bmp":
+                headers.setContentType("image/bmp");
+                break;
+            case "tiff":
+                headers.setContentType("image/tiff");
+                break;
+            case "svg":
+                headers.setContentType("image/svg+xml");
+                break;
+            case "webp":
+                headers.setContentType("image/webp");
+                break;
+            case "ico":
+                headers.setContentType("image/x-icon");
+                break;
+            default:
+                throw new RuntimeException("Unsupported file type: " + fileExtension);
+        }
+
+        blobClient.setHttpHeaders(headers);
+
+        // Check if blob exists, then get its URL
+        if (blobClient.exists()) {
+            return blobClient.getBlobUrl();
+        } else {
+            throw new RuntimeException("Image not found in Azure Blob Storage");
+        }
     }
 
     @Override

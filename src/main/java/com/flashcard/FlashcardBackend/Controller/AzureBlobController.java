@@ -11,7 +11,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/flashcard/blob")
@@ -52,6 +54,25 @@ public class AzureBlobController {
         } catch (Exception e) {
             log.error("Error updating file: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File update failed");
+        }
+    }
+
+    // Get Image URL
+    @GetMapping("/get-url")
+    public ResponseEntity<?> getImageUrl(
+            @RequestParam("userId") String userId,
+            @RequestParam("deckId") String deckId,
+            @RequestParam("cardId") String cardId,
+            @RequestParam("file") String file) {
+        try {
+            Storage storage = new Storage(userId, deckId, cardId, file, null);
+            String imageUrl = azureBlobService.getImageUrl(storage);
+            Map<String, String> url = new HashMap<>();
+            url.put("url", imageUrl);
+            return ResponseEntity.ok(url);
+        } catch (Exception e) {
+            log.error("Error getting image URL: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Image not found");
         }
     }
 
