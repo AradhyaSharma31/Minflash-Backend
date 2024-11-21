@@ -1,5 +1,7 @@
 package com.flashcard.FlashcardBackend.Service.Implementation;
 
+import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobContainerClient;
 import com.flashcard.FlashcardBackend.DTO.CardDTO;
 import com.flashcard.FlashcardBackend.DTO.DeckDTO;
 import com.flashcard.FlashcardBackend.Entity.Card;
@@ -10,11 +12,14 @@ import com.flashcard.FlashcardBackend.Repository.CardRepo;
 import com.flashcard.FlashcardBackend.Repository.DeckRepo;
 import com.flashcard.FlashcardBackend.Repository.UserRepo;
 import com.flashcard.FlashcardBackend.Service.CardService;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
@@ -22,6 +27,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class CardServiceImpl implements CardService {
 
     @Autowired
@@ -31,13 +37,16 @@ public class CardServiceImpl implements CardService {
     @Autowired
     private final UserRepo userRepo;
     @Autowired
+    private final BlobContainerClient blobContainerClient;
+    @Autowired
     private final ModelMapper modelMapper;
 
     @Autowired
-    public CardServiceImpl(CardRepo cardRepo, DeckRepo deckRepo, UserRepo userRepo, ModelMapper modelMapper) {
+    public CardServiceImpl(CardRepo cardRepo, DeckRepo deckRepo, UserRepo userRepo, BlobContainerClient blobContainerClient, ModelMapper modelMapper) {
         this.cardRepo = cardRepo;
         this.deckRepo = deckRepo;
         this.userRepo = userRepo;
+        this.blobContainerClient = blobContainerClient;
         this.modelMapper = modelMapper;
     }
 
@@ -69,6 +78,63 @@ public class CardServiceImpl implements CardService {
         Card savedCard = cardRepo.save(card);
         return modelMapper.map(savedCard, CardDTO.class);
     }
+
+    @Override
+    public CardDTO createCardWithImage(UUID deckId, String term, String definition, String image, MultipartFile file) throws IOException {
+        // Fetch the deck
+        Deck deck = deckRepo.findById(deckId)
+                .orElseThrow(() -> new RuntimeException("Deck not found"));
+
+        // Create the card object
+        Card card = new Card();
+        card.setDeck(deck);
+        card.setTerm(term);
+        card.setDefinition(definition);
+        card.setImage(image);
+
+        // Set default fields for the new card
+        card.setCreatedAt(LocalDateTime.now());
+        card.setEaseFactor(2.5f);
+        card.setInterval(0);
+        card.setRepetitionCount(0);
+        card.setReviewCount(0);
+        card.setLapses(0);
+        card.setNextReview(LocalDateTime.now());
+        card.setStatus(CardStatus.NEW);
+        card.setDue(false);
+
+        // Additional fields
+        card.setConsecutiveCorrectAnswers(0);
+        card.setLastTimeEasy(null);
+
+        // Save the card first to generate the ID
+        Card savedCard = cardRepo.save(card);
+
+        // Now that the card is saved, we can upload the image with the generated ID
+        if (file != null && !file.isEmpty()) {
+            uploadImage(deck.getUser().getId(), deckId, savedCard.getId(), file);
+        }
+
+        // Return the CardDTO with the saved data
+        return modelMapper.map(savedCard, CardDTO.class);
+    }
+
+
+    public String uploadImage(UUID userId, UUID deckId, UUID cardId, MultipartFile image) throws IOException {
+        // Create the path for the image in Azure Blob Storage
+        String fileName = image.getOriginalFilename();
+        String path = String.format("%s/%s/%s/%s", userId, deckId, cardId, fileName);
+
+        // Upload the image to Azure Blob Storage
+        BlobClient blob = blobContainerClient.getBlobClient(path);
+        blob.upload(image.getInputStream(), image.getSize(), false);
+
+        log.info("Image uploaded to Azure Blob Storage at: " + path);
+
+        return path;
+    }
+
+
 
     @Override
     public CardDTO readCardById(UUID deckId, UUID cardId) {

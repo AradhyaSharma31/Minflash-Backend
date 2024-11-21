@@ -12,6 +12,7 @@ public interface AzureBlobService {
     public String uploadImage(Storage storage);
 
     public String updateImage(Storage storage);
+    public String getImageUrl(Storage storage);
 
     public byte[] readImage(Storage storage);
 
