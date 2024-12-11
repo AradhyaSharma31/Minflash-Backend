@@ -80,8 +80,36 @@ public class AzureBlobServiceImpl implements AzureBlobService {
     }
 
     @Override
+    public String uploadProfileImage(Storage storage) {
+
+        UUID userId = UUID.fromString(storage.getUserId());
+        User user = userRepo.findById(userId).orElseThrow(() -> new RuntimeException("User Not Found"));
+
+        String path = getProfilePath(storage);
+        BlobClient blob = blobContainerClient.getBlobClient(path);
+        blob.upload(storage.getInputStream(), false);
+
+        log.info("Image has been added to the card");
+        return path;
+    }
+
+    @Override
     public String updateImage(Storage storage) {
         String path = getPath(storage);
+        BlobClient blob = blobContainerClient.getBlobClient(path);
+        blob.upload(storage.getInputStream(), true);
+        return path;
+    }
+
+    @Override
+    public String updateProfileImage(Storage storage) {
+        UUID userId = UUID.fromString(storage.getUserId());
+        User user = userRepo.findById(userId).orElseThrow(() -> new RuntimeException("User Not Found"));
+
+        user.setProfilePicture(storage.getFileName());
+        userRepo.save(user);
+
+        String path = getProfilePath(storage);
         BlobClient blob = blobContainerClient.getBlobClient(path);
         blob.upload(storage.getInputStream(), true);
         return path;
@@ -145,6 +173,62 @@ public class AzureBlobServiceImpl implements AzureBlobService {
     }
 
     @Override
+    public String getProfileImageUrl(Storage storage) {
+        String path = getProfilePath(storage);
+        BlobClient blobClient = blobContainerClient.getBlobClient(path);
+        BlobHttpHeaders headers = new BlobHttpHeaders();
+        String fileName = storage.getFileName();
+        int dotIndex = fileName.lastIndexOf(".");
+        String fileExtension = "";
+
+        if (dotIndex > 0) {
+            fileExtension = fileName.substring(dotIndex + 1).toLowerCase();
+            System.out.println("File extension: " + fileExtension);
+        } else {
+            System.out.println("No extension found.");
+        }
+
+        // Set Content-Type based on file extension
+        switch (fileExtension) {
+            case "png":
+                headers.setContentType("image/png");
+                break;
+            case "jpeg":
+            case "jpg":
+                headers.setContentType("image/jpeg");
+                break;
+            case "gif":
+                headers.setContentType("image/gif");
+                break;
+            case "bmp":
+                headers.setContentType("image/bmp");
+                break;
+            case "tiff":
+                headers.setContentType("image/tiff");
+                break;
+            case "svg":
+                headers.setContentType("image/svg+xml");
+                break;
+            case "webp":
+                headers.setContentType("image/webp");
+                break;
+            case "ico":
+                headers.setContentType("image/x-icon");
+                break;
+            default:
+                throw new RuntimeException("Unsupported file type: " + fileExtension);
+        }
+
+        blobClient.setHttpHeaders(headers);
+
+        if (blobClient.exists()) {
+            return blobClient.getBlobUrl();
+        } else {
+            throw new RuntimeException("Image not found in Azure Blob Storage");
+        }
+    }
+
+    @Override
     public byte[] readImage(Storage storage) {
         String path = getPath(storage);
         BlobClient blobClient = blobContainerClient.getBlobClient(path);
@@ -175,6 +259,14 @@ public class AzureBlobServiceImpl implements AzureBlobService {
         log.info("Blob is deleted successfully");
     }
 
+    @Override
+    public void deleteProfileImage(Storage storage) {
+        String path = getProfilePath(storage);
+        BlobClient client = blobContainerClient.getBlobClient(path);
+        client.delete();
+        log.info("Blob is deleted successfully");
+    }
+
     private String getPath(Storage storage) {
         if (StringUtils.isBlank(storage.getUserId()) ||
                 StringUtils.isBlank(storage.getDeckId()) ||
@@ -198,6 +290,19 @@ public class AzureBlobServiceImpl implements AzureBlobService {
                 .orElseThrow(() -> new RuntimeException("Card Not Associated With Deck"));
 
         return storage.getUserId() + "/" + storage.getDeckId() + "/" + storage.getCardId() + "/" + storage.getFileName();
+    }
+
+    private String getProfilePath(Storage storage) {
+        if (StringUtils.isBlank(storage.getUserId()) ||
+                StringUtils.isBlank(storage.getFileName())) {
+            throw new RuntimeException("Invalid path parameters");
+        }
+
+        // Validate entities (user, deck, card)
+        UUID userId = UUID.fromString(storage.getUserId());
+        User user = userRepo.findById(userId).orElseThrow(() -> new RuntimeException("User Not Found"));
+
+        return storage.getUserId() + "/" + storage.getFileName();
     }
 
 }

@@ -11,12 +11,21 @@ public interface AzureBlobService {
 
     public String uploadImage(Storage storage);
 
+    public String uploadProfileImage(Storage storage);
+
     public String updateImage(Storage storage);
+
+    public String updateProfileImage(Storage storage);
+
     public String getImageUrl(Storage storage);
+
+    public String getProfileImageUrl(Storage storage);
 
     public byte[] readImage(Storage storage);
 
     public List<String> listFiles(Storage storage);
 
     public void deleteImage(Storage storage);
+
+    public void deleteProfileImage(Storage storage);
 }
