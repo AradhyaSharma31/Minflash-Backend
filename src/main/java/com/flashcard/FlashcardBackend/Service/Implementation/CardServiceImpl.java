@@ -134,8 +134,6 @@ public class CardServiceImpl implements CardService {
         return path;
     }
 
-
-
     @Override
     public CardDTO readCardById(UUID deckId, UUID cardId) {
 

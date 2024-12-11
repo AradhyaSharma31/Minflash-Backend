@@ -40,6 +40,21 @@ public class AzureBlobController {
         }
     }
 
+    // Upload Image
+    @PostMapping("/uploadImage")
+    public ResponseEntity<String> uploadProfileImage(
+            @RequestParam("userId") String userId,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            Storage storage = createProfileStorage(userId, file);
+            String path = azureBlobService.uploadProfileImage(storage);
+            return ResponseEntity.status(HttpStatus.CREATED).body("Profile uploaded to path: " + path);
+        } catch (Exception e) {
+            log.error("Error uploading file: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Profile upload failed");
+        }
+    }
+
     // Update Image
     @PutMapping("/update")
     public ResponseEntity<String> updateImage(
@@ -57,6 +72,27 @@ public class AzureBlobController {
         }
     }
 
+    // Update Profile Image
+    @PutMapping("/update-profile")
+    public ResponseEntity<?> updateProfileImage(
+            @RequestParam("userId") String userId,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            Storage storage = createProfileStorage(userId, file);
+            String path = azureBlobService.updateProfileImage(storage);
+
+            int getPosition = path.lastIndexOf("/");
+            String fileName = path.substring(getPosition + 1);
+
+            Map<String, String> profileImage = new HashMap<>();
+            profileImage.put("file", fileName);
+            return ResponseEntity.ok(profileImage);
+        } catch (Exception e) {
+            log.error("Error updating file: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File update failed");
+        }
+    }
+
     // Get Image URL
     @GetMapping("/get-url")
     public ResponseEntity<?> getImageUrl(
@@ -67,6 +103,23 @@ public class AzureBlobController {
         try {
             Storage storage = new Storage(userId, deckId, cardId, file, null);
             String imageUrl = azureBlobService.getImageUrl(storage);
+            Map<String, String> url = new HashMap<>();
+            url.put("url", imageUrl);
+            return ResponseEntity.ok(url);
+        } catch (Exception e) {
+            log.error("Error getting image URL: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Image not found");
+        }
+    }
+
+    // Get Profile Image URL
+    @GetMapping("/get-profile-url")
+    public ResponseEntity<?> getProfileImageUrl(
+            @RequestParam("userId") String userId,
+            @RequestParam("file") String file) {
+        try {
+            Storage storage = new Storage(userId, null, null, file, null);
+            String imageUrl = azureBlobService.getProfileImageUrl(storage);
             Map<String, String> url = new HashMap<>();
             url.put("url", imageUrl);
             return ResponseEntity.ok(url);
@@ -126,6 +179,21 @@ public class AzureBlobController {
         }
     }
 
+    // Delete Profile Image
+    @DeleteMapping("/delete-profile")
+    public ResponseEntity<String> deleteImage(
+            @RequestParam("userId") String userId,
+            @RequestParam("fileName") String fileName) {
+        try {
+            Storage storage = new Storage(userId, null, null, fileName, null);
+            azureBlobService.deleteProfileImage(storage);
+            return ResponseEntity.ok("File deleted successfully");
+        } catch (Exception e) {
+            log.error("Error deleting file: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File deletion failed");
+        }
+    }
+
     // Helper Method to Create Storage Object
     private Storage createStorage(String userId, String deckId, String cardId, MultipartFile file) throws IOException {
         String fileName = file.getOriginalFilename();
@@ -134,6 +202,15 @@ public class AzureBlobController {
         }
         InputStream inputStream = file.getInputStream();
         return new Storage(userId, deckId, cardId, fileName, inputStream);
+    }
+
+    private Storage createProfileStorage(String userId, MultipartFile file) throws IOException {
+        String fileName = file.getOriginalFilename();
+        if (fileName == null || fileName.isEmpty()) {
+            throw new RuntimeException("File name is invalid");
+        }
+        InputStream inputStream = file.getInputStream();
+        return new Storage(userId, null, null, fileName, inputStream);
     }
 
 }
