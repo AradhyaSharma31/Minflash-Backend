@@ -6,7 +6,6 @@ import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.models.BlobHttpHeaders;
 import com.azure.storage.blob.models.BlobItem;
-import com.flashcard.FlashcardBackend.DTO.CardDTO;
 import com.flashcard.FlashcardBackend.Entity.Card;
 import com.flashcard.FlashcardBackend.Entity.Deck;
 import com.flashcard.FlashcardBackend.Entity.Storage;
@@ -20,11 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -54,10 +50,6 @@ public class AzureBlobServiceImpl implements AzureBlobService {
     @Override
     public String uploadImage(Storage storage) {
 
-        String path = getPath(storage);
-        BlobClient blob = blobContainerClient.getBlobClient(path);
-        blob.upload(storage.getInputStream(), false);
-
         UUID userId = UUID.fromString(storage.getUserId());
         User user = userRepo.findById(userId).orElseThrow(() -> new RuntimeException("User Not Found"));
 
@@ -75,6 +67,10 @@ public class AzureBlobServiceImpl implements AzureBlobService {
         card.setImage(storage.getFileName());
         cardRepo.save(card);
         log.info("Image has been added to the card");
+
+        String path = getPath(storage);
+        BlobClient blob = blobContainerClient.getBlobClient(path);
+        blob.upload(storage.getInputStream(), false);
 
         return path;
     }
@@ -95,6 +91,25 @@ public class AzureBlobServiceImpl implements AzureBlobService {
 
     @Override
     public String updateImage(Storage storage) {
+
+        UUID userId = UUID.fromString(storage.getUserId());
+        User user = userRepo.findById(userId).orElseThrow(() -> new RuntimeException("User Not Found"));
+
+        UUID deckId = UUID.fromString(storage.getDeckId());
+        Deck deck = deckRepo.findById(deckId)
+                .filter(d -> d.getUser().getId().equals(user.getId()))
+                .orElseThrow(() -> new RuntimeException("Deck Not Associated With User"));
+
+        UUID cardId = UUID.fromString(storage.getCardId());
+        Card card = cardRepo.findById(cardId)
+                .filter(c -> c.getDeck().getId().equals(deck.getId()))
+                .orElseThrow(() -> new RuntimeException("Card Not Associated With Deck"));
+
+        // setting the card's image
+        card.setImage(storage.getFileName());
+        cardRepo.save(card);
+        log.info("Image has been added to the card");
+
         String path = getPath(storage);
         BlobClient blob = blobContainerClient.getBlobClient(path);
         blob.upload(storage.getInputStream(), true);
