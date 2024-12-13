@@ -319,5 +319,4 @@ public class AzureBlobServiceImpl implements AzureBlobService {
 
         return storage.getUserId() + "/" + storage.getFileName();
     }
-
 }
