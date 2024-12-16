@@ -268,6 +268,25 @@ public class AzureBlobServiceImpl implements AzureBlobService {
 
     @Override
     public void deleteImage(Storage storage) {
+
+        UUID userId = UUID.fromString(storage.getUserId());
+        User user = userRepo.findById(userId).orElseThrow(() -> new RuntimeException("User Not Found"));
+
+        UUID deckId = UUID.fromString(storage.getDeckId());
+        Deck deck = deckRepo.findById(deckId)
+                .filter(d -> d.getUser().getId().equals(user.getId()))
+                .orElseThrow(() -> new RuntimeException("Deck Not Associated With User"));
+
+        UUID cardId = UUID.fromString(storage.getCardId());
+        Card card = cardRepo.findById(cardId)
+                .filter(c -> c.getDeck().getId().equals(deck.getId()))
+                .orElseThrow(() -> new RuntimeException("Card Not Associated With Deck"));
+
+        // setting the card's image
+        card.setImage(null);
+        cardRepo.save(card);
+        log.info("Image has been added to the card");
+
         String path = getPath(storage);
         BlobClient client = blobContainerClient.getBlobClient(path);
         client.delete();
