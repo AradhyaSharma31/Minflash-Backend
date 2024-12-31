@@ -1,1 +1,2 @@
-Live: <a href="minflash.onrender.com">minflash.onrender.com<a/>
+deployed link:
+https://minflash.onrender.com/
