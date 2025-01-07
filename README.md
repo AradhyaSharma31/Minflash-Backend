@@ -1,4 +1,4 @@
-# Flashcard Learning App (Backend)
+# MinFlash (Backend)
 
 This is the **backend** of a flashcard learning application built with **Spring Boot** and **MySQL**. It handles user authentication, manages flashcard and set data, and implements a **Spaced Repetition System (SRS)** for users.
 
