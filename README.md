@@ -47,5 +47,7 @@ Azure: For storing user-uploaded images
 Feel free to fork and contribute to this project! Here are some ways you can help:
 
 Report bugs or suggest features.
+
 Submit pull requests with fixes or improvements.
+
 Improve the documentation.
