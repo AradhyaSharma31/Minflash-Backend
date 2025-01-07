@@ -28,7 +28,8 @@ This is the **backend** of a flashcard learning application built with **Spring 
 
    http://locahost:{your-port}
 
-##Technologies Used
+## Technologies Used
+
 Spring Boot: Backend framework
 
 MySQL: Database for storing user and flashcard data
@@ -41,7 +42,8 @@ Postman: API testing
 
 Azure: For storing user-uploaded images
 
-##Contributing
+## Contributing
+
 Feel free to fork and contribute to this project! Here are some ways you can help:
 
 Report bugs or suggest features.
