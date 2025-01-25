@@ -28,9 +28,9 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
 
 
 @Configuration
-    @EnableWebSecurity
-    @EnableMethodSecurity // for role based API access
-    public class SecurityConfig {
+@EnableWebSecurity
+@EnableMethodSecurity // for role based API access
+public class SecurityConfig {
     @Autowired
     private final CustomUserDetailService customUserDetailService;
 
