@@ -6,6 +6,9 @@ This is the **backend** of a flashcard learning application built with **Spring 
 
 - **User Authentication**: JWT-based authentication and OTP email verification.
 - **Flashcard & Set Management**: CRUD operations for flashcards and flashcard sets.
+- **Folder Management**: Users can organize sets by adding them to relevant folders.
+- **Category Management**: Users can select category for their sets and request new category.
+- **Admin**: Admin can implement requested categories and delete existing ones.
 - **Spaced Repetition System (SRS)**: Tracks and manages the review process for flashcards.
 - **Profile Customization**: Manage user profile data including profile image upload.
 - **API Documentation**: API routes for interacting with the frontend.
@@ -30,7 +33,7 @@ This is the **backend** of a flashcard learning application built with **Spring 
 
 ## Technologies Used
 
-Spring Boot: Backend framework
+Java Spring Boot: Backend framework
 
 MySQL: Database for storing user and flashcard data
 
